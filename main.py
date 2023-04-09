@@ -7,34 +7,31 @@ pygame.init()
 win = pygame.display.set_mode((500, 500))
 clock = pygame.time.Clock()
 FPS = 60
-GRAVITY = Vec(0, 15.8)
+GRAVITY = Vec(0, 0)
+GRAVSPEED = 15.8
+GRAVDIRS = [Vec(x) for x in [ (0,-1), (0,1), (-1,0), (1,0) ]]
+print('''
+PLEASE READ:
+
+Use arrow keys to change Gravity (along with spacebar to nuetralize)
+AND use WASD to move the character
+''')
 def dt():
     global clock
     return clock.get_time()*0.001
-
-def randomGrav():
-    global GRAVITY
-    r = random.randint(0,4)
-    if r == 1:
-        GRAVITY = Vec(0, -15.8)
-    elif r == 2:
-        GRAVITY = Vec(0, 15.8)
-    elif r == 3:
-        GRAVITY = Vec(15.8, 0)
-    elif r == 4:
-        GRAVITY = Vec(-15.8, 0)
-    else:
-        GRAVITY = Vec(0, 0)
-    
-    print(GRAVITY)
-
 
 class Player:
     def __init__(self, level):
         self.rect = pygame.Rect(50,50,25,25)
         self.vel = Vec(0,0)
+        # direction binds for W, S, A, D 
+        self.up = [Vec(x) for x in [ (0,-1), (0,1), (-1,0), (1,0) ]]
+        self.down = [Vec(x) for x in [ (0,1), (0,-1), (-1,0), (1,0) ]]
+        self.right = [Vec(x) for x in [ (-1, 0), (1,0), (0,1), (0,-1) ]]
+        self.left = [Vec(x) for x in [ (1, 0), (-1,0), (0,-1), (0,1) ]]
+        self.getDir = {(0, 1):self.up, (0, -1): self.down, (1, 0): self.right, (-1, 0): self.left}
         self.speed = 30
-        self.jumpSpeed = 6000
+        self.jumpSpeed = 600
         self.drag = 0.85
         self.image = pygame.Surface(self.rect.size)
         self.image.fill((0, 20, 140))
@@ -45,21 +42,22 @@ class Player:
 
     def move(self):
         global GRAVITY
-        gNorm = GRAVITY.normalize()
-
         keys = pygame.key.get_pressed()
         if GRAVITY:
+            gNorm = GRAVITY.normalize()
+            dir = self.getDir[(gNorm.x, gNorm.y)]
             if keys[pygame.K_w] and self.canJump():
-                self.vel.y -= self.jumpSpeed*dt()
+                self.vel += dir[0]*self.jumpSpeed*dt()
         else:
+            dir = self.up
             if keys[pygame.K_w]:
-                self.vel.y -= self.speed*dt()
+                self.vel += dir[0]*self.speed*dt()
             if keys[pygame.K_s]:
-                self.vel.y += self.speed*dt()
+                self.vel += dir[1]*self.speed*dt()
         if keys[pygame.K_a]:
-            self.vel.x -= self.speed*dt()
+            self.vel += dir[2]*self.speed*dt()
         if keys[pygame.K_d]:
-            self.vel.x += self.speed*dt()
+            self.vel += dir[3]*self.speed*dt()
         
         self.vel += GRAVITY*dt()
         lim = 20 if GRAVITY else 6
@@ -85,7 +83,10 @@ class Player:
                 self.vel.y = 0
 
             if GRAVITY:
-                self.vel.x *= self.drag
+                if GRAVITY.y:
+                    self.vel.x *= self.drag
+                else:
+                    self.vel.y *= self.drag
             else:
                 self.vel *= self.drag
         else:
@@ -97,8 +98,8 @@ class Player:
                 return c
         return False
     
-    def isJumpDir(x, y):
-        if 
+    # def isJumpDir(x, y):
+    #     if 
     def canJump(self):
         global GRAVITY
         self.rect.topleft += GRAVITY.normalize()#/max(abs(min(GRAVITY.x, GRAVITY.y)), abs(max(GRAVITY.x, GR.y)))
@@ -116,7 +117,19 @@ class Level:
         self.rect = pygame.Rect(0, 0, self.image.get_width(), self.image.get_height())
     
     def update(self):
-        pass
+        global GRAVITY, GRAVSPEED
+        
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_UP]:
+            GRAVITY = GRAVDIRS[0]*GRAVSPEED
+        if keys[pygame.K_DOWN]:
+            GRAVITY = GRAVDIRS[1]*GRAVSPEED
+        if keys[pygame.K_LEFT]:
+            GRAVITY = GRAVDIRS[2]*GRAVSPEED
+        if keys[pygame.K_RIGHT]:
+            GRAVITY = GRAVDIRS[3]*GRAVSPEED
+        if keys[pygame.K_SPACE]:
+            GRAVITY = Vec(0, 0)
 
     def render(self):
         s = len(self.data[0])*self.tileW
@@ -148,6 +161,4 @@ while run:
         obj.update()
     for obj in sprites:
         win.blit(obj.image, obj.rect)
-    # if random.randint(0, 234) == 160:
-    #     randomGrav()
     pygame.display.flip()
