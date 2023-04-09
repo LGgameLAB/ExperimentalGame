@@ -113,6 +113,7 @@ class Level:
         self.tileW = 25
         self.color = (150, 0, 0)
         self.colliders = []
+        self.arrowPic = pygame.image.load("arrow.png")
         self.render()
         self.rect = pygame.Rect(0, 0, self.image.get_width(), self.image.get_height())
     
@@ -122,18 +123,26 @@ class Level:
         keys = pygame.key.get_pressed()
         if keys[pygame.K_UP]:
             GRAVITY = GRAVDIRS[0]*GRAVSPEED
+            self.render()
         if keys[pygame.K_DOWN]:
             GRAVITY = GRAVDIRS[1]*GRAVSPEED
+            self.render()
         if keys[pygame.K_LEFT]:
             GRAVITY = GRAVDIRS[2]*GRAVSPEED
+            self.render()
         if keys[pygame.K_RIGHT]:
             GRAVITY = GRAVDIRS[3]*GRAVSPEED
+            self.render()
         if keys[pygame.K_SPACE]:
             GRAVITY = Vec(0, 0)
+            self.render()
 
     def render(self):
         s = len(self.data[0])*self.tileW
         self.image = pygame.Surface((s, s), pygame.SRCALPHA)
+        if GRAVITY:
+            img = pygame.transform.rotate(self.arrowPic, GRAVITY.angle_to((0, 0)))
+            self.image.blit(img, img.get_rect(center=(s/2, s/2)) )
         for col in range(len(self.data)):
             for row in range(len(self.data[col])):
                 if int(self.data[col][row]):
@@ -141,6 +150,7 @@ class Level:
                     self.colliders.append(rect)
                     pygame.draw.rect(self.image, self.color, rect, 3)
         return self.image
+
 
 with open("data.txt", "r") as f:
     data = f.read().split('\n')
