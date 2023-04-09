@@ -1,23 +1,40 @@
 import pygame
 from pygame import Vector2 as Vec
-import math, sys
+import math, random, sys
 
 pygame.init()
 
 win = pygame.display.set_mode((500, 500))
 clock = pygame.time.Clock()
 FPS = 60
-GRAVITY = Vec(0, -15.8)
+GRAVITY = Vec(0, 15.8)
 def dt():
     global clock
     return clock.get_time()*0.001
+
+def randomGrav():
+    global GRAVITY
+    r = random.randint(0,4)
+    if r == 1:
+        GRAVITY = Vec(0, -15.8)
+    elif r == 2:
+        GRAVITY = Vec(0, 15.8)
+    elif r == 3:
+        GRAVITY = Vec(15.8, 0)
+    elif r == 4:
+        GRAVITY = Vec(-15.8, 0)
+    else:
+        GRAVITY = Vec(0, 0)
+    
+    print(GRAVITY)
+
 
 class Player:
     def __init__(self, level):
         self.rect = pygame.Rect(50,50,25,25)
         self.vel = Vec(0,0)
         self.speed = 30
-        self.jumpSpeed = 700
+        self.jumpSpeed = 6000
         self.drag = 0.85
         self.image = pygame.Surface(self.rect.size)
         self.image.fill((0, 20, 140))
@@ -28,6 +45,7 @@ class Player:
 
     def move(self):
         global GRAVITY
+        gNorm = GRAVITY.normalize()
 
         keys = pygame.key.get_pressed()
         if GRAVITY:
@@ -43,7 +61,7 @@ class Player:
         if keys[pygame.K_d]:
             self.vel.x += self.speed*dt()
         
-        self.vel -= GRAVITY*dt()
+        self.vel += GRAVITY*dt()
         lim = 20 if GRAVITY else 6
         if self.vel.length() > 0.1:
             self.vel.scale_to_length( max( -lim, min(lim, self.vel.length()) ) )
@@ -79,15 +97,20 @@ class Player:
                 return c
         return False
     
+    def isJumpDir(x, y):
+        if 
     def canJump(self):
-        self.rect.y += 2
+        global GRAVITY
+        self.rect.topleft += GRAVITY.normalize()#/max(abs(min(GRAVITY.x, GRAVITY.y)), abs(max(GRAVITY.x, GR.y)))
         result = self.checkCollide()
-        self.rect.y -= 2
+        self.rect.topleft -= GRAVITY.normalize()
         return bool(result)
+
 class Level:
     def __init__(self, data):
         self.data = data
         self.tileW = 25
+        self.color = (150, 0, 0)
         self.colliders = []
         self.render()
         self.rect = pygame.Rect(0, 0, self.image.get_width(), self.image.get_height())
@@ -103,7 +126,7 @@ class Level:
                 if int(self.data[col][row]):
                     rect = pygame.Rect(row*self.tileW, col*self.tileW, self.tileW, self.tileW)
                     self.colliders.append(rect)
-                    pygame.draw.rect(self.image, (150, 0, 0), rect, 3)
+                    pygame.draw.rect(self.image, self.color, rect, 3)
         return self.image
 
 with open("data.txt", "r") as f:
@@ -125,4 +148,6 @@ while run:
         obj.update()
     for obj in sprites:
         win.blit(obj.image, obj.rect)
+    # if random.randint(0, 234) == 160:
+    #     randomGrav()
     pygame.display.flip()
