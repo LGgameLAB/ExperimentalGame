@@ -1,0 +1,6 @@
+import pygame
+
+WIDTH, HEIGHT = 500, 500
+FPS = 60
+
+GRAVSPEED = 15.8

@@ -1,11 +1,10 @@
 import pygame
 from pygame import Vector2 as Vec
+from pygame import group.Group as Group
 import math, random, sys
 
 pygame.init()
 
-win = pygame.display.set_mode((500, 500))
-clock = pygame.time.Clock()
 FPS = 60
 GRAVITY = Vec(0, 0)
 GRAVSPEED = 15.8
@@ -20,8 +19,9 @@ def dt():
     global clock
     return clock.get_time()*0.001
 
-class Player:
-    def __init__(self, level):
+class Player(pygame.Sprite):
+    def __init__(self, game):
+        super().__init__(self, game.sprites)
         self.rect = pygame.Rect(50,50,25,25)
         self.vel = Vec(0,0)
         # direction binds for W, S, A, D 
@@ -35,7 +35,7 @@ class Player:
         self.drag = 0.85
         self.image = pygame.Surface(self.rect.size)
         self.image.fill((0, 20, 140))
-        self.level = level
+        self.level = game.level
     
     def update(self):
         self.move()
@@ -107,8 +107,10 @@ class Player:
         self.rect.topleft -= GRAVITY.normalize()
         return bool(result)
 
-class Level:
-    def __init__(self, data):
+class Level(pygame.Sprite):
+    def __init__(self, game, file):
+        
+        super().__init__(self, self.game.sprites)
         self.data = data
         self.tileW = 25
         self.color = (150, 0, 0)
@@ -151,24 +153,39 @@ class Level:
                     pygame.draw.rect(self.image, self.color, rect, 3)
         return self.image
 
+class Game:
+    def __init__(self):
+        self.gravity = Vec(0, 0)
+        self.gravdirs = [Vec(x) for x in [ (0,-1), (0,1), (-1,0), (1,0)]]
+        self.win = pygame.display.set_mode((500, 500))
+        self.clock = pygame.time.Clock()
+        self.level = Level(self, "data.txt")
+        self.player = Player(self)
+        self.sprites = Group(lvl1, self.player)
+ 
+    def dt(self):
+        return self.clock.get_time()*0.001
+    
+    def run(self):
+        while True:
+            for v in pygame.event.get():
+                if v.type == pygame.QUIT:
+                    self.quit()
+            if pygame.key.get_pressed()[pygame.K_ESCAPE]:
+                self.quit()
+                break
+            clock.tick(FPS)
+            win.fill((0,0,0))
+            self.sprites.update()
+            for obj in self.sprites:
+                self.win.blit(obj.image, obj.rect)
 
-with open("data.txt", "r") as f:
-    data = f.read().split('\n')
-    lvl1 = Level(data)
+            pygame.display.flip() 
+            
+    def quit(self):
+        pygame.quit()
+        sys.exit()
 
-p = Player(lvl1)
-sprites = [lvl1, p]
-run = True
-while run:
-    for v in pygame.event.get():
-        if v.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
-
-    clock.tick(FPS)
-    win.fill((0,0,0))
-    for obj in sprites:
-        obj.update()
-    for obj in sprites:
-        win.blit(obj.image, obj.rect)
-    pygame.display.flip()
+if __name__ == "__main__":
+    g = Game()
+    g.run()
