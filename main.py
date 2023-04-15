@@ -1,15 +1,14 @@
 import pygame
 from pygame import Vector2 as Vec
 import math, random, sys
+from settings import *
+from sprites import Camera
 
 pygame.init()
 
 win = pygame.display.set_mode((500, 500))
 clock = pygame.time.Clock()
-FPS = 60
 GRAVITY = Vec(0, 0)
-GRAVSPEED = 15.8
-GRAVDIRS = [Vec(x) for x in [ (0,-1), (0,1), (-1,0), (1,0) ]]
 print('''
 PLEASE READ:
 
@@ -113,6 +112,7 @@ class Level:
         self.tileW = 25
         self.color = (150, 0, 0)
         self.colliders = []
+        self.magicSprites = []
         self.arrowPic = pygame.image.load("arrow.png")
         self.render()
         self.rect = pygame.Rect(0, 0, self.image.get_width(), self.image.get_height())
@@ -138,26 +138,32 @@ class Level:
             self.render()
 
     def render(self):
-        s = len(self.data[0])*self.tileW
-        self.image = pygame.Surface((s, s), pygame.SRCALPHA)
+        w = len(self.data[0])*self.tileW
+        h = len(self.data)*self.tileW
+        self.image = pygame.Surface((w, h), pygame.SRCALPHA)
         if GRAVITY:
             img = pygame.transform.rotate(self.arrowPic, GRAVITY.angle_to((0, 0)))
-            self.image.blit(img, img.get_rect(center=(s/2, s/2)) )
+            self.image.blit(img, img.get_rect(center=(w/2, h/2)) )
         for col in range(len(self.data)):
             for row in range(len(self.data[col])):
-                if int(self.data[col][row]):
+                value = int(self.data[col][row])
+                if value:
                     rect = pygame.Rect(row*self.tileW, col*self.tileW, self.tileW, self.tileW)
-                    self.colliders.append(rect)
-                    pygame.draw.rect(self.image, self.color, rect, 3)
+                    if value == 2:
+                        pass
+                    else:
+                        self.colliders.append(rect)
+                        pygame.draw.rect(self.image, self.color, rect, 3)
         return self.image
 
 
-with open("data.txt", "r") as f:
+with open("data2.txt", "r") as f:
     data = f.read().split('\n')
     lvl1 = Level(data)
 
 p = Player(lvl1)
-sprites = [lvl1, p]
+c = Camera(p, lvl1.rect.w, lvl1.rect.h)
+sprites = [lvl1, p, c]
 run = True
 while run:
     for v in pygame.event.get():
@@ -170,5 +176,8 @@ while run:
     for obj in sprites:
         obj.update()
     for obj in sprites:
-        win.blit(obj.image, obj.rect)
+        try:
+            win.blit(obj.image, c.apply(obj))
+        except:
+            pass
     pygame.display.flip()
